@@ -9,16 +9,17 @@
   xmlns:desktop4="http://schemas.microsoft.com/appx/manifest/desktop/windows10/4"
   xmlns:desktop5="http://schemas.microsoft.com/appx/manifest/desktop/windows10/5"
   xmlns:desktop6="http://schemas.microsoft.com/appx/manifest/desktop/windows10/6"
+  xmlns:desktop10="http://schemas.microsoft.com/appx/manifest/desktop/windows10/10"
   xmlns:uap10="http://schemas.microsoft.com/appx/manifest/uap/windows10/10"
   xmlns:com="http://schemas.microsoft.com/appx/manifest/com/windows10"
-  IgnorableNamespaces="uap uap2 uap3 rescap desktop desktop4 desktop5 desktop6 uap10 com">
+  IgnorableNamespaces="uap uap2 uap3 rescap desktop desktop4 desktop5 desktop6 desktop10 uap10 com">
   <Identity
     Name="@@PackageName@@"
-    Publisher="CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US"
+    Publisher="CN=@@Publisher@@, O=@@Publisher@@, L=@@Publisher@@, S=@@Publisher@@, C=PL"
     Version="1.0.0.0" />
   <Properties>
     <DisplayName>@@PackageDisplayName@@</DisplayName>
-    <PublisherDisplayName>Microsoft Corporation</PublisherDisplayName>
+    <PublisherDisplayName>@@PublisherDisplayName@@</PublisherDisplayName>
     <Logo>resources\app\resources\win32\code_150x150.png</Logo>
     <uap10:AllowExternalContent>true</uap10:AllowExternalContent>
     <desktop6:RegistryWriteVirtualization>disabled</desktop6:RegistryWriteVirtualization>
@@ -71,6 +72,9 @@
             <desktop5:ItemType Type="*">
               <desktop5:Verb Id="@@MenuID@@" Clsid="@@CLSID@@" />
             </desktop5:ItemType>
+            <desktop10:ItemType Type="Drive">
+              <desktop5:Verb Id="@@MenuID@@" Clsid="@@CLSID@@" />
+            </desktop10:ItemType>
           </desktop4:FileExplorerContextMenus>
         </desktop4:Extension>
         <com:Extension Category="windows.comServer">

@@ -7,7 +7,8 @@
           'src/explorer_command.def',
         ],
         'include_dirs': [
-          'deps/wil/include',
+          'vcpkg_installed/<(target_arch)-windows/include/fmt',
+          'vcpkg_installed/<(target_arch)-windows/include/wil',
         ],
         'defines': [
           '_WINDLL',
@@ -18,6 +19,8 @@
           '_CRT_NONSTDC_NO_DEPRECATE',
         ],
         'msvs_settings': {
+          'WindowsTargetPlatformVersion': '10',
+          'LanguageStandard': 'stdcpp20',
           'VCLinkerTool': {
             'AdditionalOptions': [
               '/guard:cf',
@@ -28,9 +31,10 @@
           'VCCLCompilerTool': {
             'AdditionalOptions': [
               '/Zc:__cplusplus',
-              '-std:c++17',
+              '/std:c++20',
               '/Qspectre',
               '/guard:cf',
+              '/utf-8'
             ],
             'BufferSecurityCheck': 'true',
             'ExceptionHandling': 1,               # /EHsc
@@ -48,51 +52,41 @@
     ],
   },
   'targets': [{
-    'target_name': 'code_explorer_command',
+    'target_name': 'Code Modern Explorer Menu',
     'type': 'shared_library',
     'defines': [
       'EXE_NAME="Code.exe"',
+      'DIR_NAME="Microsoft VS Code"',
     ],
     'conditions': [
       [ 'OS=="win"', {
         'conditions': [
-          ['target_arch=="x86"', {
-            'TargetMachine' : 1,              # /MACHINE:X86
-            'defines': [ 
-              'DLL_UUID="0632BBFB-D195-4972-B458-53ADEB984588"',
-            ],
-          }],
           ['target_arch=="x64"', {
             'TargetMachine' : 17,             # /MACHINE:X64
             'defines': [ 
-              'DLL_UUID="1C6DF0C0-192A-4451-BE36-6A59A86A692E"',
+              'DLL_UUID="E4E4C322-3388-45AF-8D39-BE19BFC78A18"',
             ],
           }],
           ['target_arch=="arm64"', {
             'TargetMachine' : 18,             # /MACHINE:ARM64 https://learn.microsoft.com/en-us/dotnet/api/microsoft.visualstudio.vcprojectengine.machinetypeoption?view=visualstudiosdk-2022
             'defines': [ 
-              'DLL_UUID="F5EA5883-1DA8-4A05-864A-D5DE2D2B2854"',
+              'DLL_UUID="12483301-B459-40BE-A434-DF8010E8958F"',
             ],
           }],
         ],
       }],
     ],
   }, {
-    'target_name': 'code_insiders_explorer_command',
+    'target_name': 'Code Insiders Modern Explorer Menu',
     'type': 'shared_library',
     'defines': [
       'EXE_NAME="Code - Insiders.exe"',
+      'DIR_NAME="Microsoft VS Code Insiders"',
       'INSIDER=1',
     ],
     'conditions': [
       [ 'OS=="win"', {
         'conditions': [
-          ['target_arch=="x86"', {
-            'TargetMachine' : 1,              # /MACHINE:X86
-            'defines': [ 
-              'DLL_UUID="B9949795-B37D-457F-ADDE-6A950EF85CA7"',
-            ],
-          }],
           ['target_arch=="x64"', {
             'TargetMachine' : 17,             # /MACHINE:X64
             'defines': [ 

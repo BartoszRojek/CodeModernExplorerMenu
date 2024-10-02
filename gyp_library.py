@@ -26,15 +26,13 @@ def edit_main_gyp(arch):
     content = f.read()
     config = ast.literal_eval(content)
     v = config['target_defaults']
-    v['msvs_configuration_platform'] = 'ARM64'
+    v['msvs_configuration_platform'] = f'{arch}'
     with open(main_gyp, 'w+') as f:
       f.write(pprint.pformat(config, indent=2))
 
 def run_gyp(arch, args):
   edit_config_gypi(arch)
-  if arch == 'arm64':
-    edit_main_gyp(arch)
-
+  edit_main_gyp(arch)
   args.append('main.gyp')
   args.extend(['-I', 'config.gypi'])
   args.append('--depth=.')

@@ -5,9 +5,9 @@ import os
 import sys
 
 code_clsid_map = {
-  'x86': '0632BBFB-D195-4972-B458-53ADEB984588',
-  'x64': '1C6DF0C0-192A-4451-BE36-6A59A86A692E',
-  'arm64': 'F5EA5883-1DA8-4A05-864A-D5DE2D2B2854'
+  'x86': '978573D8-4037-4F64-A055-0C6BDC64D71F',
+  'x64': 'E4E4C322-3388-45AF-8D39-BE19BFC78A18',
+  'arm64': '12483301-B459-40BE-A434-DF8010E8958F'
 }
 
 code_insiders_clsid_map = {
@@ -23,28 +23,34 @@ arch = sys.argv[2]
 pkg_dir = os.path.join(out_dir, pkg_type + '_explorer_pkg_' + arch)
 
 # Create output directory.
-os.mkdir(pkg_dir)
+if not os.path.exists(pkg_dir):
+    os.mkdir(pkg_dir)
 
 # Update AppxManifest.
 manifest = os.path.join(root, 'template', 'AppxManifest.xml')
 with open(manifest, 'r') as f:
   content = f.read()
-  content = content.replace('@@PackageDLL@@', pkg_type + '_explorer_command.dll')
-  content = content.replace('@@PackageDescription@@', pkg_type + ' context menu handler')
-  if pkg_type == 'code':
-    content = content.replace('@@PackageName@@', 'Microsoft.VSCode')
-    content = content.replace('@@PackageDisplayName@@', 'Visual Studio Code')
+  content = content.replace('@@PublisherDisplayName@@', 'Code Modern Explorer Menu')
+  if pkg_type == 'stable':
+    content = content.replace('@@Publisher@@', 'Code.Modern.Explorer.Menu')
+    content = content.replace('@@PackageDescription@@', 'Code Modern Explorer Menu')
+    content = content.replace('@@PackageName@@', 'Code.Modern.Explorer.Menu')
+    content = content.replace('@@PackageDisplayName@@', 'Code Modern Explorer Menu')
     content = content.replace('@@Application@@', 'Code.exe')
     content = content.replace('@@ApplicationIdShort@@', 'Code')
     content = content.replace('@@MenuID@@', 'OpenWithCode')
     content = content.replace('@@CLSID@@', code_clsid_map[arch])
-  if pkg_type == 'code_insiders':
-    content = content.replace('@@PackageName@@', 'Microsoft.VSCodeInsiders')
-    content = content.replace('@@PackageDisplayName@@', 'Visual Studio Code - Insiders')
+    content = content.replace('@@PackageDLL@@', 'Code Modern Explorer Menu.dll')
+  if pkg_type == 'insiders':
+    content = content.replace('@@Publisher@@', 'Code.Insiders.Modern.Explorer.Menu')
+    content = content.replace('@@PackageDescription@@', 'Code Insiders Modern Explorer Menu')
+    content = content.replace('@@PackageName@@', 'Code.Insiders.Modern.Explorer.Menu')
+    content = content.replace('@@PackageDisplayName@@', 'Code Insiders Modern Explorer Menu')
     content = content.replace('@@Application@@', 'Code - Insiders.exe')
     content = content.replace('@@ApplicationIdShort@@', 'CodeInsiders')
     content = content.replace('@@MenuID@@', 'OpenWithCodeInsiders')
     content = content.replace('@@CLSID@@', code_insiders_clsid_map[arch])
+    content = content.replace('@@PackageDLL@@', 'Code Insiders Modern Explorer Menu.dll')
 
 # Copy AppxManifest file to the package directory.
 manifest_output = os.path.join(pkg_dir, 'AppxManifest.xml')

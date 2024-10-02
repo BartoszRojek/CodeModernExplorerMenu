@@ -1,0 +1,122 @@
+name: build-win
+on:
+  workflow_dispatch:
+  workflow_call:
+  release:
+    types: [published]
+  push:
+    branches:
+    - main
+    paths-ignore:
+      - '**/*.md'
+
+  pull_request:
+    branches:
+    - main
+
+env:
+    VCPKG_DEFAULT_TRIPLET: x64-windows
+    GYP_MSVS_VERSION: '2022'
+    Version: ${{ github.ref_name || github.event.release.tag_name }}
+    
+permissions: write-all
+
+jobs:
+  build:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: pwsh
+
+    strategy:
+      matrix:
+        arch:
+        - x64
+        #- arm64
+        Product: [
+          { ProductName: Code Modern Explorer Menu, Variant: stable },
+          { ProductName: Code Insiders Modern Explorer Menu, Variant: insiders }
+        ]
+        
+    steps:
+    - name: Install PSMSI module
+      run: Install-Module -Name PSMSI -Scope CurrentUser -Force
+
+    - uses: actions/checkout@v4.1.7
+      with:
+        submodules: recursive
+
+    - name: Install Python Setuptools package
+      run: python -m pip install --upgrade setuptools
+
+    - name: Setup MSBuild
+      uses: microsoft/setup-msbuild@v2
+      with:
+        msbuild-architecture: ${{ matrix.arch }}
+
+    - name: Generate project solution
+      run: python gyp_library.py ${{ matrix.arch }}
+
+    - name: vcpkg integrate install
+      run: vcpkg integrate install
+
+    - name: Build project solution
+      working-directory: out
+      run: msbuild /m main.sln /p:VcpkgEnableManifest=true
+
+    - name: Create sparse package
+      run: |
+        $makeappx = "C:\Program Files (x86)\Windows Kits\10\App Certification Kit\makeappx.exe"
+        
+        python3 .\scripts\generate_pkg.py ${{ matrix.Product.Variant }} ${{ matrix.arch }} .\template\AppxManifest.xml
+
+        Set-Location out
+
+        & "$makeappx" pack /d "${{ matrix.Product.Variant }}_explorer_pkg_${{ matrix.arch }}" /p "${{ matrix.Product.ProductName }} ${{ matrix.arch }}.appx" /nv
+
+    - name: Copy dll for artifact upload
+      run: |
+        Set-Location out
+
+        Copy-Item -LiteralPath "Default\${{ matrix.Product.ProductName }}.dll" -Destination "..\out"
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4.4.0
+      with:
+        name: ${{ matrix.Product.ProductName }} ${{ matrix.arch }}
+        path: |
+          out\${{ matrix.Product.ProductName }} ${{ matrix.arch }}.appx
+          out\${{ matrix.Product.ProductName }}.dll
+
+    - name: Copy files for msi
+      run: |
+        New-Item -Name "$github_workspace\output" -ItemType Directory
+
+        Copy-Item -LiteralPath "out\Default\${{ matrix.Product.ProductName }}.dll" -Destination "$github_workspace\output"
+        
+        Copy-Item -LiteralPath "out\${{ matrix.Product.Variant }}_explorer_pkg_${{ matrix.arch }}\AppxManifest.xml" -Destination "$github_workspace\output"
+    
+    - name: Set Version for non-release run
+      if: github.ref_name == 'main'
+      run: echo "Version=4.0.0" >> $env:GITHUB_ENV
+
+    - name: Run build-msi.ps1 script
+      run: .\build-msi.ps1 -ProductName "${{ matrix.Product.ProductName }}" -Variant ${{ matrix.Product.Variant }} -Platform ${{ matrix.arch }} -Version ${{ env.Version }}
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4.4.0
+      if: github.ref_name == 'main'
+      with:
+        name: ${{ matrix.Product.ProductName }}.${{ env.Version }}.${{ matrix.arch }}.msi
+        path: |
+          output\${{ matrix.Product.ProductName }}.${{ env.Version }}.${{ matrix.arch }}.msi
+
+    - name: Upload artifact to release
+      uses: svenstaro/upload-release-action@2.9.0
+      if: github.ref_type == 'tag'
+      with:
+        repo_token: ${{ secrets.GITHUB_TOKEN }}
+        file: output\${{ matrix.Product.ProductName }}.${{ env.Version }}.${{ matrix.arch }}.msi
+        asset_name: ${{ matrix.Product.ProductName }}.${{ env.Version }}.${{ matrix.arch }}.msi
+        tag: ${{ github.ref_name || github.event.release.tag_name }}
+        overwrite: true

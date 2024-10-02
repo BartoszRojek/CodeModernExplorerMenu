@@ -1,12 +1,14 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
-
+#include <fmt/core.h>
+#include <iostream>
+#include <fstream>
 #include <windows.h>
-
+#include <shellapi.h>
+#include <shlobj.h>
 #include <filesystem>
 #include <string>
 #include <utility>
-
 #include <shlwapi.h>
 #include <shobjidl_core.h>
 #include <userenv.h>
@@ -16,6 +18,9 @@
 #include "wil/stl.h"
 #include "wil/filesystem.h"
 #include "wil/win32_helpers.h"
+#include <wil/cppwinrt.h>
+#include <wil/resource.h>
+#include <wil/com.h>
 
 using Microsoft::WRL::ClassicCom;
 using Microsoft::WRL::ComPtr;
@@ -95,11 +100,11 @@ class __declspec(uuid(DLL_UUID)) ExplorerCommandHandler final : public RuntimeCl
     wchar_t value_w[kMaxStringLength];
     wchar_t expanded_value_w[kMaxStringLength];
     DWORD value_size_w = sizeof(value_w);
-#if defined(INSIDER)
-    const wchar_t kTitleRegkey[] = L"Software\\Classes\\VSCodeInsidersContextMenu";
-#else
-    const wchar_t kTitleRegkey[] = L"Software\\Classes\\VSCodeContextMenu";
-#endif
+    #if defined(INSIDER)
+        const wchar_t kTitleRegkey[] = L"Software\\Classes\\CodeInsidersModernExplorerMenu";
+    #else
+        const wchar_t kTitleRegkey[] = L"Software\\Classes\\CodeModernExplorerMenu";
+    #endif
     HKEY subhkey = nullptr;
     LONG result = RegOpenKeyEx(HKEY_LOCAL_MACHINE, kTitleRegkey, 0, KEY_READ, &subhkey);
     if (result != ERROR_SUCCESS) {
@@ -119,7 +124,30 @@ class __declspec(uuid(DLL_UUID)) ExplorerCommandHandler final : public RuntimeCl
   IFACEMETHODIMP GetIcon(IShellItemArray* items, PWSTR* icon) {
     std::filesystem::path module_path{ wil::GetModuleFileNameW<std::wstring>(wil::GetModuleInstanceHandle()) };
     module_path = module_path.remove_filename().parent_path().parent_path();
-    module_path /= EXE_NAME;
+    module_path = module_path / DIR_NAME / EXE_NAME;
+
+    if (!std::filesystem::exists(module_path)) {
+        std::filesystem::path fallback_path = std::filesystem::path("C:\\Program Files") / DIR_NAME / EXE_NAME;
+        if (std::filesystem::exists(fallback_path)) {
+            module_path = fallback_path;
+        } else {
+            return E_FAIL;
+        }
+    }
+    
+    // doesn't work, had to use hardcoded "Program Files" path
+    // if (!std::filesystem::exists(module_path)) {
+    //   PWSTR ProgramFilesPath = nullptr;
+    //   HRESULT hr = SHGetKnownFolderPath(FOLDERID_ProgramFiles, 0, NULL, &ProgramFilesPath);
+    //   std::filesystem::path fallback_path = std::filesystem::path(ProgramFilesPath) / DIR_NAME / EXE_NAME;
+    //   CoTaskMemFree(ProgramFilesPath);
+    //   if (std::filesystem::exists(fallback_path)) {
+    //     module_path = fallback_path;
+    //   } else {
+    //     return E_FAIL;
+    //   }
+    // }
+
     return SHStrDupW(module_path.c_str(), icon);
   }
 
@@ -149,38 +177,51 @@ class __declspec(uuid(DLL_UUID)) ExplorerCommandHandler final : public RuntimeCl
   }
 
   IFACEMETHODIMP Invoke(IShellItemArray* items, IBindCtx* bindCtx) {
-    if (items) {
-      std::filesystem::path module_path{ wil::GetModuleFileNameW<std::wstring>(wil::GetModuleInstanceHandle()) };
-      module_path = module_path.remove_filename().parent_path().parent_path();
-      module_path /= EXE_NAME;
-      DWORD count;
-      RETURN_IF_FAILED(items->GetCount(&count));
-      for (DWORD i = 0; i < count; ++i) {
-        ComPtr<IShellItem> item;
-        auto result = items->GetItemAt(i, &item);
-        if (SUCCEEDED(result)) {
-          wil::unique_cotaskmem_string path;
-          result = item->GetDisplayName(SIGDN_FILESYSPATH, &path);
-          if (SUCCEEDED(result)) {
-            auto command{ wil::str_printf<std::wstring>(LR"-("%s" %s)-", module_path.c_str(), QuoteForCommandLineArg(path.get()).c_str()) };
-            wil::unique_process_information process_info;
-            STARTUPINFOW startup_info = {sizeof(startup_info)};
-            RETURN_IF_WIN32_BOOL_FALSE(CreateProcessW(
-              nullptr,
-              command.data(),
-              nullptr /* lpProcessAttributes */,
-              nullptr /* lpThreadAttributes */,
-              false /* bInheritHandles */, 
-              CREATE_NO_WINDOW,
-              nullptr,
-              nullptr,
-              &startup_info,
-              &process_info));
+      if (items) {
+          std::filesystem::path module_path{ wil::GetModuleFileNameW<std::wstring>(wil::GetModuleInstanceHandle()) };
+          module_path = module_path.remove_filename().parent_path().parent_path();
+          module_path = module_path / DIR_NAME / EXE_NAME;
+
+          if (!std::filesystem::exists(module_path)) {
+            std::filesystem::path fallback_path = std::filesystem::path("C:\\Program Files") / DIR_NAME / EXE_NAME;
+            if (std::filesystem::exists(fallback_path)) {
+                module_path = fallback_path;
+            } else {
+                return E_FAIL;
+            }
           }
-        }
+
+          // doesn't work, had to use hardcoded "Program Files" path
+          // if (!std::filesystem::exists(module_path)) {
+          //   PWSTR ProgramFilesPath = nullptr;
+          //   HRESULT hr = SHGetKnownFolderPath(FOLDERID_ProgramFiles, 0, NULL, &ProgramFilesPath);
+          //   std::filesystem::path fallback_path = std::filesystem::path(ProgramFilesPath) / DIR_NAME / EXE_NAME;
+          //   CoTaskMemFree(ProgramFilesPath);
+          //   if (std::filesystem::exists(fallback_path)) {
+          //     module_path = fallback_path;
+          //   } else {
+          //     return E_FAIL;
+          //   }
+          // }
+
+          DWORD count;
+          RETURN_IF_FAILED(items->GetCount(&count));
+          for (DWORD i = 0; i < count; ++i) {
+              ComPtr<IShellItem> item;
+              auto result = items->GetItemAt(i, &item);
+              if (SUCCEEDED(result)) {
+                  wil::unique_cotaskmem_string path;
+                  result = item->GetDisplayName(SIGDN_FILESYSPATH, &path);
+                  if (SUCCEEDED(result)) {
+                      HINSTANCE ret = ShellExecuteW(nullptr, L"open", module_path.c_str(), QuoteForCommandLineArg(path.get()).c_str(), nullptr, SW_SHOW);
+                      if ((INT_PTR)ret <= HINSTANCE_ERROR) {
+                          RETURN_LAST_ERROR();
+                      }
+                  }
+              }
+          }
       }
-    }
-    return S_OK;
+      return S_OK;
   }
 };
 

@@ -1,30 +1,29 @@
-# vscode-explorer-command
+# Code Modern Explorer Menu
+An MSI package that adds the Windows 11 Modern Explorer menu for Microsoft Visual Studio Code.
+  
+> [!NOTE]
+> Please restart Windows Explorer after installation.
+> 
+> Installation requires admin rights and accepting UAC prompt to temporarily enable Developer Mode if required and restore its initial status after installation.
 
-> Generates shell extension dll for x86, x64 and arm64 windows
+> [!CAUTION]
+> AV may flag this as a virus due to the lack of a signature and self-elevation.
 
-Allows extending the Windows 11 context menu once published as a
-sparse package. This repository is only responsible for creating
-the shell extensions and unsigned sparse package, `microsoft/vscode` is responsible
-for code signing and installing it through Inno.
+## Requirements:
+- Windows 11+
+- VSCode installed
+- Admin rights
 
-## Contributing
+## Features:
+- does not interfere with the classic menu
+- does not interfere with the original VSCode Insiders menu
+- should not interfere when VSCode stable introduces the menu
+- works with both system and user installation locations
+- support the case when VSCode runs as Administrator, thanks to  [ArcticLampyrid](https://github.com/microsoft/vscode-explorer-command/pull/17)
+- Also works for Devices and drives, thanks to [AndromedaMelody](https://github.com/microsoft/vscode-explorer-command/pull/16)
+- Future VSCode updates won’t break the menu, thanks to [huutaiii](https://github.com/huutaiii/vscode-explorer-command)
 
-This project welcomes contributions and suggestions.  Most contributions require you to agree to a
-Contributor License Agreement (CLA) declaring that you have the right to, and actually do, grant us
-the rights to use your contribution. For details, visit https://cla.opensource.microsoft.com.
-
-When you submit a pull request, a CLA bot will automatically determine whether you need to provide
-a CLA and decorate the PR appropriately (e.g., status check, comment). Simply follow the instructions
-provided by the bot. You will only need to do this once across all repos using our CLA.
-
-This project has adopted the [Microsoft Open Source Code of Conduct](https://opensource.microsoft.com/codeofconduct/).
-For more information see the [Code of Conduct FAQ](https://opensource.microsoft.com/codeofconduct/faq/) or
-contact [opencode@microsoft.com](mailto:opencode@microsoft.com) with any additional questions or comments.
-
-## Trademarks
-
-This project may contain trademarks or logos for projects, products, or services. Authorized use of Microsoft 
-trademarks or logos is subject to and must follow 
-[Microsoft's Trademark & Brand Guidelines](https://www.microsoft.com/en-us/legal/intellectualproperty/trademarks/usage/general).
-Use of Microsoft trademarks or logos in modified versions of this project must not cause confusion or imply Microsoft sponsorship.
-Any use of third-party trademarks or logos are subject to those third-party's policies.
+## Project changes:
+- replace Azure DevOps with GitHub Actions
+- removed C++ dependencies from the repository
+- added vcpkg package manager
